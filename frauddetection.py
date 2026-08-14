@@ -432,6 +432,70 @@ def prepare_features(df):
     )
 
 
+    # FREQUENCY ENCODING
+
+    categorical_columns = (
+        X.select_dtypes(
+            include=[
+                "object",
+                "string",
+                "category"
+            ]
+        )
+        .columns
+        .tolist()
+    )
+
+    print(
+        "Categorical columns:",
+        len(categorical_columns)
+    )
+
+    for column in categorical_columns:
+
+        frequency = (
+            X[column]
+            .value_counts(
+                dropna=False,
+                normalize=True
+            )
+        )
+
+        X[
+            column + "_freq"
+        ] = (
+            X[column]
+            .map(frequency)
+            .fillna(0)
+        )
+
+    X = X.drop(
+        columns=categorical_columns
+    )
+
+    # --------------------------------------------------------
+    # NUMERIC CONVERSION
+    # --------------------------------------------------------
+
+    X = X.replace(
+        [
+            np.inf,
+            -np.inf
+        ],
+        np.nan
+    )
+
+    for column in X.columns:
+
+        if not pd.api.types.is_numeric_dtype(
+            X[column]
+        ):
+
+            X[column] = pd.to_numeric(
+                X[column],
+                errors="coerce"
+            )
+
 #RUN PROGRAM
 
 if __name__ == "__main__":
