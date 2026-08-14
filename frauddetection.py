@@ -486,3 +486,139 @@ def create_behavioral_features(df):
             .astype(str)
         )
 
+    # --------------------------------------------------------
+    # PREVIOUS TRANSACTION AMOUNT
+    # --------------------------------------------------------
+
+    df["previous_card_amount"] = (
+        df.groupby(
+            "card_key"
+        )["TransactionAmt"]
+        .shift(1)
+    )
+
+    # --------------------------------------------------------
+    # HISTORICAL MEAN
+    # IMPORTANT:
+    # shift(1) prevents current transaction leakage
+    # --------------------------------------------------------
+
+    df["card_previous_mean_amount"] = (
+        df.groupby(
+            "card_key"
+        )["TransactionAmt"]
+        .transform(
+            lambda x:
+            x.shift(1)
+            .expanding()
+            .mean()
+        )
+    )
+
+    # --------------------------------------------------------
+    # TRANSACTION COUNT
+    # --------------------------------------------------------
+
+    df["card_previous_transaction_count"] = (
+        df.groupby(
+            "card_key"
+        )
+        .cumcount()
+    )
+
+    # --------------------------------------------------------
+    # AMOUNT DEVIATION
+    # --------------------------------------------------------
+
+    df["amount_deviation_ratio"] = (
+        df["TransactionAmt"] /
+        (
+            df[
+                "card_previous_mean_amount"
+            ] + 1e-6
+        )
+    )
+
+    # --------------------------------------------------------
+    # DEVICE NOVELTY
+    # --------------------------------------------------------
+
+    if "DeviceInfo" in df.columns:
+
+        df["device_key"] = (
+            df["DeviceInfo"]
+            .astype("string")
+            .fillna("UNKNOWN")
+        )
+
+        df["card_device_key"] = (
+            df["card_key"].astype(str)
+            + "_"
+            + df["device_key"].astype(str)
+        )
+
+        df[
+            "card_device_previous_count"
+        ] = (
+            df.groupby(
+                "card_device_key"
+            )
+            .cumcount()
+        )
+
+        df["is_new_card_device"] = (
+            df[
+                "card_device_previous_count"
+            ] == 0
+        ).astype("int8")
+
+    else:
+
+        df["is_new_card_device"] = 0
+
+    # --------------------------------------------------------
+    # TRANSACTION VELOCITY
+    # --------------------------------------------------------
+
+    df[
+        "card_previous_transaction_time"
+    ] = (
+        df.groupby(
+            "card_key"
+        )["TransactionDT"]
+        .shift(1)
+    )
+
+    df[
+        "seconds_since_previous_card_transaction"
+    ] = (
+        df["TransactionDT"] -
+        df[
+            "card_previous_transaction_time"
+        ]
+    )
+
+    df["rapid_transaction"] = (
+        df[
+            "seconds_since_previous_card_transaction"
+        ]
+        .between(
+            0,
+            300
+        )
+        .fillna(False)
+        .astype("int8")
+    )
+
+    df["very_rapid_transaction"] = (
+        df[
+            "seconds_since_previous_card_transaction"
+        ]
+        .between(
+            0,
+            60
+        )
+        .fillna(False)
+        .astype("int8")
+    )
+
