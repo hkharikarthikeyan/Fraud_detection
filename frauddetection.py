@@ -148,3 +148,285 @@ def check_dataset():
         print("\nEnsure kagglehub is installed:  pip install kagglehub")
         print("And you are logged in:          kagglehub.login()")
         return False
+
+# ============================================================
+# LOAD DATA
+# ============================================================
+
+def load_data():
+
+    print_section(
+        "LOADING DATA"
+    )
+
+    transaction_file = (
+        DATA_DIR /
+        "train_transaction.csv"
+    )
+
+    identity_file = (
+        DATA_DIR /
+        "train_identity.csv"
+    )
+
+    if not transaction_file.exists():
+
+        raise FileNotFoundError(
+            f"Missing: {transaction_file}"
+        )
+
+    if not identity_file.exists():
+
+        raise FileNotFoundError(
+            f"Missing: {identity_file}"
+        )
+
+    print(
+        "Loading train_transaction.csv..."
+    )
+
+    transaction = pd.read_csv(
+        transaction_file,
+        low_memory=False
+    )
+
+    print(
+        "Transaction shape:",
+        transaction.shape
+    )
+
+    print(
+        "Loading train_identity.csv..."
+    )
+
+    identity = pd.read_csv(
+        identity_file,
+        low_memory=False
+    )
+
+    print(
+        "Identity shape:",
+        identity.shape
+    )
+
+    print(
+        "Merging transaction + identity..."
+    )
+
+    df = transaction.merge(
+        identity,
+        on="TransactionID",
+        how="left"
+    )
+
+    print(
+        "Merged shape:",
+        df.shape
+    )
+
+    del transaction
+    del identity
+
+    cleanup()
+
+    return df
+
+
+# ============================================================
+# 8. EDA
+# ============================================================
+
+def perform_eda(df):
+
+    print_section(
+        "EXPLORATORY DATA ANALYSIS"
+    )
+
+    target = "isFraud"
+
+    fraud_count = int(
+        df[target].sum()
+    )
+
+    total_count = len(df)
+
+    fraud_percentage = (
+        fraud_count /
+        total_count *
+        100
+    )
+
+    print(
+        f"Total transactions : {total_count:,}"
+    )
+
+    print(
+        f"Fraud transactions  : {fraud_count:,}"
+    )
+
+    print(
+        f"Fraud percentage    : {fraud_percentage:.2f}%"
+    )
+
+    print(
+        "\nTarget distribution:"
+    )
+
+    print(
+        df[target].value_counts()
+    )
+
+    # Target plot
+    plt.figure(
+        figsize=(7, 5)
+    )
+
+    sns.countplot(
+        data=df,
+        x=target
+    )
+
+    plt.title(
+        "Fraud vs Non-Fraud Transactions"
+    )
+
+    plt.tight_layout()
+
+    plt.savefig(
+        PLOT_DIR /
+        "fraud_distribution.png"
+    )
+
+    plt.close()
+
+    # Missing values
+    missing = (
+        df.isnull()
+        .mean()
+        .sort_values(
+            ascending=False
+        ) * 100
+    )
+
+    missing_df = pd.DataFrame({
+        "missing_percentage": missing
+    })
+
+    missing_df.to_csv(
+        REPORT_DIR /
+        "missing_values.csv"
+    )
+
+    print(
+        "\nTop missing-value columns:"
+    )
+
+    print(
+        missing_df.head(20)
+    )
+
+
+# ============================================================
+# 9. TIME FEATURES
+# ============================================================
+
+def create_time_features(df):
+
+    print_section(
+        "CREATING TIME FEATURES"
+    )
+
+    seconds_per_day = (
+        24 * 60 * 60
+    )
+
+    df["transaction_day"] = (
+        df["TransactionDT"] //
+        seconds_per_day
+    )
+
+    df["transaction_hour"] = (
+        (
+            df["TransactionDT"] %
+            seconds_per_day
+        ) // 3600
+    )
+
+    df["transaction_weekday"] = (
+        df["transaction_day"] % 7
+    )
+
+    df["is_night"] = (
+        (
+            df["transaction_hour"] < 6
+        ) |
+        (
+            df["transaction_hour"] >= 23
+        )
+    ).astype("int8")
+
+    return df
+
+
+# ============================================================
+# 10. TRADITIONAL FEATURES
+# ============================================================
+
+def create_traditional_features(df):
+
+    print_section(
+        "CREATING TRADITIONAL FEATURES"
+    )
+
+    if "TransactionAmt" in df.columns:
+
+        df["log_transaction_amount"] = (
+            np.log1p(
+                df["TransactionAmt"]
+                .clip(lower=0)
+            )
+        )
+
+    card_columns = [
+        "card1",
+        "card2",
+        "card3",
+        "card4",
+        "card5",
+        "card6"
+    ]
+
+    existing_cards = [
+        column
+        for column in card_columns
+        if column in df.columns
+    ]
+
+    if existing_cards:
+
+        df["card_missing_count"] = (
+            df[existing_cards]
+            .isna()
+            .sum(axis=1)
+        )
+
+    address_columns = [
+        "addr1",
+        "addr2"
+    ]
+
+    existing_addresses = [
+        column
+        for column in address_columns
+        if column in df.columns
+    ]
+
+    if existing_addresses:
+
+        df["address_missing_count"] = (
+            df[existing_addresses]
+            .isna()
+            .sum(axis=1)
+        )
+
+    return df
