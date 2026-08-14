@@ -394,3 +394,9 @@ def create_behavioral_features(df):
         if feature in df.columns:
             print(f"  ✓ {feature}")
     return df
+
+#RUN PROGRAM
+
+if __name__ == "__main__":
+
+    main()
