@@ -430,3 +430,59 @@ def create_traditional_features(df):
         )
 
     return df
+
+# ============================================================
+# BEHAVIORAL FEATURES
+# ============================================================
+
+def create_behavioral_features(df):
+
+    print_section(
+        "CREATING BEHAVIOR-AWARE FEATURES"
+    )
+
+    # Sort chronologically
+    df = (
+        df.sort_values(
+            "TransactionDT"
+        )
+        .reset_index(
+            drop=True
+        )
+    )
+
+    # --------------------------------------------------------
+    # CARD KEY
+    # --------------------------------------------------------
+
+    card_parts = [
+        column
+        for column in [
+            "card1",
+            "card2",
+            "card3",
+            "card5",
+            "card6"
+        ]
+        if column in df.columns
+    ]
+
+    if card_parts:
+
+        df["card_key"] = (
+            df[card_parts]
+            .astype("string")
+            .fillna("UNKNOWN")
+            .agg(
+                "_".join,
+                axis=1
+            )
+        )
+
+    else:
+
+        df["card_key"] = (
+            df["TransactionID"]
+            .astype(str)
+        )
+
