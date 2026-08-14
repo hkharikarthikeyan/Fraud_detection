@@ -13,6 +13,7 @@ Financial institutions face significant losses due to fraudulent transactions. T
 - Engineers behavioral features from transaction history
 - Provides explainability using SHAP values
 - Outputs hybrid risk scores combining model probability, behavioral signals, and anomaly scores
+- Runs locally (optimizing memory usage via row limits) and in Google Colab (self-contained layout)
 
 ---
 
@@ -21,9 +22,10 @@ Financial institutions face significant losses due to fraudulent transactions. T
 ### 1. Data Ingestion
 - Automatically downloads the IEEE-CIS dataset via `kagglehub`
 - Merges `train_transaction.csv` and `train_identity.csv` on `TransactionID`
+- Supports custom row subsetting (`nrows`) to prevent Out Of Memory (OOM) errors locally
 
 ### 2. Exploratory Data Analysis
-- Fraud rate analysis (3.5% imbalance)
+- Fraud rate analysis (2.56% in subset, ~3.5% overall)
 - Missing value profiling
 - Target distribution visualization
 
@@ -34,7 +36,7 @@ Financial institutions face significant losses due to fraudulent transactions. T
 
 ### 4. Preprocessing
 - Frequency encoding for categorical variables
-- Median imputation for missing values
+- Mean imputation for missing values
 - Removal of features with >95% missing values
 
 ### 5. Class Imbalance Handling
@@ -57,13 +59,13 @@ Final risk score = 0.70 × XGBoost probability + 0.20 × behavioral score + 0.10
 
 ---
 
-## Results
+## Results (Subsampled Execution)
 
-|Model                        |     ROC-AUC  |   PR-AUC | Precision   |  Recall     |    F1|
+| Model | ROC-AUC | PR-AUC | Precision | Recall | F1 |
 |---|---|---|---|---|---|
-|Baseline XGBoost            |       90.46%  |   52.16%  |   21.66%  |   73.38%  |   33.44%|
-|Behavior-Aware XGBoost      |       89.38%  |   50.31%  |   76.82%  |   33.19%  |   46.36%|
-|Final Hybrid                |       85.81%  |  46.90%   |  50.14%   |  44.61%   |  47.21%|
+| Baseline XGBoost | 89.51% | 58.76% | 31.15% | 65.37% | 42.19% |
+| Behavior-Aware XGBoost | 90.96% | 61.02% | 85.47% | 45.87% | 59.70% |
+| Final Hybrid | 85.41% | 58.11% | 78.83% | 49.54% | 60.85% |
 
 **Verdict: VERY GOOD — Strong fraud detection, suitable for deployment with monitoring.**
 
@@ -72,30 +74,21 @@ Final risk score = 0.70 × XGBoost probability + 0.20 × behavioral score + 0.10
 ## Project Structure
 
 ```
-fraud-detection-system/
-├── frauddetection.py       # Main pipeline
-├── requirements.txt        # Dependencies
-├── README.md               # Project documentation
-├── data/                   # Downloaded CSVs (auto-created)
-├── models/                 # Saved model artifacts
-│   ├── baseline_xgboost.pkl
-│   ├── behavior_aware_xgboost.pkl
-│   ├── isolation_forest.pkl
-│   ├── imputer.pkl
-│   └── optimal_threshold.pkl
-└── reports/
-    ├── missing_values.csv
-    ├── feature_importance.csv
-    ├── threshold_analysis.csv
-    ├── model_comparison.csv
-    ├── configuration.json
-    └── plots/
-        ├── fraud_distribution.png
-        ├── shap_summary.png
-        ├── feature_importance.png
-        ├── baseline_confusion_matrix.png
-        ├── behavior_confusion_matrix.png
-        └── final_confusion_matrix.png
+fraud-detection/
+├── train.py               # Main training entry point
+├── predict.py             # Main inference/prediction entry point
+├── fraud_detection.ipynb  # Self-contained Google Colab notebook
+├── requirements.txt       # Dependencies
+├── README.md              # Project documentation
+├── src/                   # Package sources
+│   ├── config.py          # Paths and constant settings
+│   ├── data_preprocessing.py # Preprocessing & Feature Engineering
+│   ├── models.py          # Model architectures and splitting
+│   ├── evaluation.py      # Metrics and plot generation
+│   └── utils.py           # Ingestion and helper functions
+├── data/                  # Downloaded CSVs (auto-created)
+├── models/                # Saved model checkpoints (auto-created)
+└── reports/               # Saved reports & plots (auto-created)
 ```
 
 ---
@@ -114,27 +107,25 @@ cd Fraud_detection
 pip install -r requirements.txt
 ```
 
-### Run
-
+### Local Training
+To run the full preprocessing, training, evaluation, and serialization pipeline locally:
 ```bash
-python frauddetection.py
+python train.py
+```
+*Note: This script automatically limits transaction ingestion to 100,000 rows to fit inside standard RAM environments.*
+
+### Local Inference
+To run predictions on a slice of transactions using the saved model checkpoints:
+```bash
+python predict.py
 ```
 
-The script will automatically download the IEEE-CIS dataset via `kagglehub` on first run. You will be prompted to authenticate with your Kaggle account.
-
-### Google Colab
-
-```python
-# Cell 1
-!pip install kagglehub xgboost imbalanced-learn shap -q
-
-# Cell 2
-import os
-os.environ["FRAUD_PROJECT_DIR"] = "/content/fraud_detection_project"
-
-# Cell 3
-# Paste frauddetection.py contents here and run
-```
+### Google Colab Execution
+Open [fraud_detection.ipynb](file:///d:/projects/Fraud%20detection/fraud_detection.ipynb) in Google Colab:
+- Cell 1 installs dependencies.
+- Cells 2 to 6 load all configuration, feature engineering, modeling, and evaluation functions locally in memory.
+- Cell 7 loads the **full dataset** (no row limits) and runs the entire training/testing pipeline.
+- Does not require mounting Google Drive or uploading any Python package dependencies.
 
 ---
 
