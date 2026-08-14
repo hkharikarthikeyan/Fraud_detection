@@ -495,7 +495,21 @@ def prepare_features(df):
                 X[column],
                 errors="coerce"
             )
+    # REMOVE EXTREMELY SPARSE FEATURES
+   
 
+    missing_ratio = (X.isna().mean())
+
+    keep_columns = (
+        missing_ratio[
+            missing_ratio < 0.95
+        ].index
+    )
+
+    X = X[keep_columns]
+    print("Final feature shape:", X.shape)
+
+    return X, y
 #RUN PROGRAM
 
 if __name__ == "__main__":
