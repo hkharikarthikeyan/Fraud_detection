@@ -1,7 +1,7 @@
-echo .venv/ > .gitignore
-echo data/ >> .gitignore
-echo models/ >> .gitignore
-echo reports/ >> .gitignore
-echo __pycache__/ >> .gitignore
-echo *.pkl >> .gitignore
-echo *.pyc >> .gitignore
+.venv/
+data/
+models/
+reports/
+__pycache__/
+*.pkl
+*.pyc
