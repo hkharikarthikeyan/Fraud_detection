@@ -60,7 +60,7 @@ Final risk score = 0.70 × XGBoost probability + 0.20 × behavioral score + 0.10
 ## Results
 
 |Model                        |     ROC-AUC  |   PR-AUC | Precision   |  Recall     |    F1|
-|---------------------------------------------------------------------------|
+|---|---|---|---|---|---|
 |Baseline XGBoost            |       90.46%  |   52.16%  |   21.66%  |   73.38%  |   33.44%|
 |Behavior-Aware XGBoost      |       89.38%  |   50.31%  |   76.82%  |   33.19%  |   46.36%|
 |Final Hybrid                |       85.81%  |  46.90%   |  50.14%   |  44.61%   |  47.21%|
