@@ -975,7 +975,7 @@ def main():
     # SMOTE + BASELINE
     
     baseline_model = train_baseline( X_train_processed,y_train)
-    (baseline_metricsbaseline_probability,baseline_prediction) = evaluate_model(baseline_model, X_valid_processed, y_valid)
+    (baseline_metrics,baseline_probability,baseline_prediction) = evaluate_model(baseline_model, X_valid_processed, y_valid)
     print_section( "BASELINE RESULTS")
 
     for metric, value in (baseline_metrics.items()):
