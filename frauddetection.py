@@ -395,6 +395,43 @@ def create_behavioral_features(df):
             print(f"  ✓ {feature}")
     return df
 
+
+# PREPARE MODEL DATA
+
+
+def prepare_features(df):
+
+    print_section(
+        "PREPARING MODEL FEATURES"
+    )
+
+    target = "isFraud"
+
+    drop_columns = [
+        target,
+        "TransactionID",
+        "TransactionDT",
+        "card_key",
+        "card_device_key",
+        "device_key",
+        "card_previous_transaction_time"
+    ]
+
+    drop_columns = [
+        column
+        for column in drop_columns
+        if column in df.columns
+    ]
+
+    X = df.drop(
+        columns=drop_columns
+    )
+
+    y = df[target].astype(
+        int
+    )
+
+
 #RUN PROGRAM
 
 if __name__ == "__main__":
